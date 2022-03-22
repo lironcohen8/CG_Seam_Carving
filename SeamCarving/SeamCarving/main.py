@@ -19,7 +19,7 @@ def get_args():
     parser.add_argument('--use_forward_implementation', action='store_true',
                         help='If set and seam_carving is used as a resizing method, then the forward-looking '
                              'implementation is used.')
-    parser.add_argument('--out_prefix', nargs=1, type=str, help='Output filename prefix.', default='out')
+    parser.add_argument('--out_prefix', type=str, help='Output filename prefix.', default='out')
     args = parser.parse_args()
     return args
 
@@ -37,7 +37,7 @@ def main(args):
                                      forward_implementation=args.use_forward_implementation)
     else:
         raise ValueError(f'Resize method {args.resize_method} is not supported')
-    utils.save_images(output, args.out_prefix)
+    utils.save_images(output, args.output_dir, args.out_prefix)
 
 
 if __name__ == '__main__':

@@ -127,6 +127,7 @@ def create_original_without_seams(image: NDArray, indices_matrix: NDArray):
 def create_original_with_dup_seams(image: NDArray, seams_matrix: NDArray, dim_diff: int):
     rows_range = np.range(image.shape[0])
     for seam_number in range(dim_diff):
+        np.insert()
         image[rows_range,seams_matrix[:,seam_number]] =
 
 

@@ -25,16 +25,16 @@ def resize(image: NDArray, out_height: int, out_width: int, forward_implementati
 
     grayscale_original_image = utils.to_grayscale(image)
     if width_diff > 0: # need to scale down the width
-        (resized_width_image, vertical_seams) = scale_down(image, grayscale_original_image, gradients, width_diff, forward_implementation)
+        resized_width_image, vertical_seams = scale_down(image, grayscale_original_image, gradients, width_diff, forward_implementation)
     else: # need to scale up the width
-        (resized_width_image, vertical_seams) = scale_up(image, grayscale_original_image, abs(width_diff), forward_implementation)
+        resized_width_image, vertical_seams = scale_up(image, grayscale_original_image, abs(width_diff), forward_implementation)
 
     grayscale_resized_image = utils.to_grayscale(resized_width_image)
     np.rot90(image, k=1, axes=(0,1)) # rotating CCW
     if height_diff > 0: # need to scale down the height
-        (resized_image, horizontal_seams) = scale_down(resized_width_image, grayscale_resized_image, height_diff, forward_implementation)
+        resized_image, horizontal_seams = scale_down(resized_width_image, grayscale_resized_image, height_diff, forward_implementation)
     else: # need to scale up the height
-        (resized_image, horizontal_seams) = scale_up(resized_width_image, grayscale_resized_image, abs(height_diff), forward_implementation)
+        resized_image, horizontal_seams = scale_up(resized_width_image, grayscale_resized_image, abs(height_diff), forward_implementation)
     np.rot90(image, k=-1, axes=(0,1)) # rotating CW
 
     out_images_dict = {'resized' : resized_image, 'vertical_seams' : vertical_seams ,'horizontal_seams' : horizontal_seams}
@@ -42,23 +42,44 @@ def resize(image: NDArray, out_height: int, out_width: int, forward_implementati
     return out_images_dict
     # TODO: return { 'resized' : img1, 'vertical_seams' : img2 ,'horizontal_seams' : img3}
 
-def scale_down(original_image: NDArray, grayscale_image: NDArray, gradients: NDArray, dim_diff: int, is_forward : bool):
+def scale_down(image: NDArray, grayscale_image: NDArray, gradients: NDArray, dim_diff: int, is_forward : bool):
     """
     Scales down the width by dim_diff.
     """
-    calculate_seams(grayscale_image, gradients, dim_diff, original_image.shape, is_forward)
-    resized_image = remove_seams_from_original()
+    indices_matrix, seams_matrix = calculate_seams(grayscale_image, gradients, dim_diff, image.shape, is_forward)
+    resized_image = create_original_without_seams(image, indices_matrix)
+    rows_range = np.range(image.shape[0])
+    for seam_number in range(dim_diff):
+        image[rows_range,seams_matrix[:,seam_number]] = [255,0,0]
+    return resized_image, image
+
+def scale_up(image: NDArray, grayscale_image: NDArray, gradients: NDArray, dim_diff: int, is_forward : bool):
+    """
+    Scales up the width by dim_diff.
+    """
+    indices_matrix, seams_matrix = calculate_seams(grayscale_image, gradients, dim_diff, image.shape, is_forward)
+    resized_image = create_original_with_dup_seams(image, seams_matrix, dim_diff)
+    rows_range = np.range(image.shape[0])
+    for seam_number in range(dim_diff):
+        image[rows_range,seams_matrix[:,seam_number]] = [0,0,0]
+    return resized_image, image
 
 def calculate_seams(grayscale_image: NDArray, gradients: NDArray, dim_diff : int, original_shape: (int,int,int), is_forward: bool):
     indices_matrix = np.indices((original_shape[0], original_shape[1]))[1]
+    seams_matrix = np.zeros((grayscale_image.shape[0],dim_diff), dtype=np.float32)
+
     for seam_number in range(dim_diff):
         if is_forward:
             cost_matrix = calculate_cost_matrix_forward(grayscale_image, gradients)
-            seam = find_best_seam_forward(cost_matrix)
+            best_seam = find_best_seam_forward(cost_matrix)
         else:
             cost_matrix = calculate_cost_matrix_basic(grayscale_image)
             best_seam = find_best_seam_basic(cost_matrix, indices_matrix)
+
+        seams_matrix[:,seam_number] = best_seam
         remove_seam(grayscale_image, indices_matrix, best_seam)
+
+    return indices_matrix, seams_matrix
 
 def calculate_cost_matrix_basic(grayscale_image: NDArray, E: NDArray):
     M = np.zeros_like(grayscale_image)
@@ -99,7 +120,14 @@ def remove_seam(grayscale_image: NDArray, indices_matrix: NDArray, seam: NDArray
         indices_matrix[row_index,:] = np.concatenate(indices_matrix[row_index,:seam[row_index]], \
                                                      indices_matrix[row_index, seam[row_index]+1:])
 
+def create_original_without_seams(image: NDArray, indices_matrix: NDArray):
+    # resized_image = np.zeros_like(original_image)
+    return np.take(image, indices_matrix)
 
+def create_original_with_dup_seams(image: NDArray, seams_matrix: NDArray, dim_diff: int):
+    rows_range = np.range(image.shape[0])
+    for seam_number in range(dim_diff):
+        image[rows_range,seams_matrix[:,seam_number]] =
 
 
 

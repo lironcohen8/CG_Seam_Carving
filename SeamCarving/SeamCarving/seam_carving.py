@@ -39,7 +39,6 @@ def resize(image: NDArray, out_height: int, out_width: int, forward_implementati
     out_images_dict = {'resized' : resized_image, 'vertical_seams' : vertical_seams ,'horizontal_seams' : horizontal_seams}
 
     return out_images_dict
-    # TODO: return { 'resized' : img1, 'vertical_seams' : img2 ,'horizontal_seams' : img3}
 
 def scale_down(image: NDArray, grayscale_image: NDArray, gradients: NDArray, dim_diff: int, is_forward : bool):
     """
@@ -80,9 +79,9 @@ def calculate_seams(grayscale_image: NDArray, gradients: NDArray, dim_diff : int
     for seam_number in range(dim_diff):
         if is_forward:
             cost_matrix = calculate_cost_matrix_forward(grayscale_image, gradients)
-            best_seam = find_best_seam_forward(cost_matrix)
+            best_seam = find_best_seam_forward(cost_matrix, indices_matrix)
         else:
-            cost_matrix = calculate_cost_matrix_basic(grayscale_image)
+            cost_matrix = calculate_cost_matrix_basic(grayscale_image, gradients)
             best_seam = find_best_seam_basic(cost_matrix, indices_matrix)
 
         seams_matrix[:,seam_number] = best_seam
@@ -140,9 +139,16 @@ def create_original_with_dup_seams(image: NDArray, seams_matrix: NDArray, dim_di
     for seam_number in range(dim_diff):
         np.insert()
         image[rows_range,seams_matrix[:,seam_number]]
+        # TODO continue
     return
 
+def calculate_cost_matrix_forward(grayscale_image: NDArray, E: NDArray):
+    # TODO continue
+    pass
 
+def find_best_seam_forward(cost_matrix: NDArray, indices_matrix: NDArray):
+    # TODO continue
+    pass
 
 
 

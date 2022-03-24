@@ -6,7 +6,6 @@ NDArray = Any
 
 def resize(image: NDArray, out_height: int, out_width: int, forward_implementation: bool) -> Dict[str, NDArray]:
     """
-
     :param image: ِnp.array which represents an image.
     :param out_height: the resized image height
     :param out_width: the resized image width
@@ -44,7 +43,12 @@ def resize(image: NDArray, out_height: int, out_width: int, forward_implementati
 
 def scale_down(image: NDArray, grayscale_image: NDArray, gradients: NDArray, dim_diff: int, is_forward : bool):
     """
-    Scales down the width by dim_diff.
+        :param image: ِnp.array which represents an image
+        :param grayscale_image: ِnp.array which represents a grayscale image
+        :param gradients: ِnp.array which represents a gradients matrix
+        :param dim_diff: the desired difference in width / height
+        :param is_forward: a boolean flag that indicates whether forward or basic implementation is used
+        :return: resized_image scaled up width by dim_diff and seams image
     """
     indices_matrix, seams_matrix = calculate_seams(grayscale_image, gradients, dim_diff, image.shape, is_forward)
     resized_image = create_original_without_seams(image, indices_matrix)
@@ -55,7 +59,12 @@ def scale_down(image: NDArray, grayscale_image: NDArray, gradients: NDArray, dim
 
 def scale_up(image: NDArray, grayscale_image: NDArray, gradients: NDArray, dim_diff: int, is_forward : bool):
     """
-    Scales up the width by dim_diff.
+        :param image: ِnp.array which represents an image
+        :param grayscale_image: ِnp.array which represents a grayscale image
+        :param gradients: ِnp.array which represents a gradients matrix
+        :param dim_diff: the desired difference in width / height
+        :param is_forward: a boolean flag that indicates whether forward or basic implementation is used
+        :return: resized_image scaled up width by dim_diff and seams image.
     """
     indices_matrix, seams_matrix = calculate_seams(grayscale_image, gradients, dim_diff, image.shape, is_forward)
     resized_image = create_original_with_dup_seams(image, seams_matrix, dim_diff)
@@ -128,7 +137,8 @@ def create_original_with_dup_seams(image: NDArray, seams_matrix: NDArray, dim_di
     rows_range = np.range(image.shape[0])
     for seam_number in range(dim_diff):
         np.insert()
-        image[rows_range,seams_matrix[:,seam_number]] =
+        image[rows_range,seams_matrix[:,seam_number]]
+    return
 
 
 

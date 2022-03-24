@@ -6,7 +6,7 @@ NDArray = Any
 
 def resize(image: NDArray, out_height: int, out_width: int, forward_implementation: bool) -> Dict[str, NDArray]:
     """
-    :param image: ِnp.array which represents an image.
+    :param image: ِnparray which represents an image
     :param out_height: the resized image height
     :param out_width: the resized image width
     :param forward_implementation: a boolean flag that indicates whether forward or basic implementation is used.
@@ -14,7 +14,7 @@ def resize(image: NDArray, out_height: int, out_width: int, forward_implementati
                                     the basic implementation is used.
     :return: A dictionary with three elements, {'resized' : img1, 'vertical_seams' : img2 ,'horizontal_seams' : img3},
             where img1 is the resized image and img2/img3 are the visualization images
-            (where the chosen seams are colored red and black for vertical and horizontal seams, respecitvely).
+            (where the chosen seams are colored red and black for vertical and horizontal seams, respectively).
     """
     gradients = utils.get_gradients(image)
     original_height = image.shape[0]
@@ -42,9 +42,9 @@ def resize(image: NDArray, out_height: int, out_width: int, forward_implementati
 
 def scale_down(image: NDArray, grayscale_image: NDArray, gradients: NDArray, dim_diff: int, is_forward : bool):
     """
-        :param image: ِnp.array which represents an image
-        :param grayscale_image: ِnp.array which represents a grayscale image
-        :param gradients: ِnp.array which represents a gradients matrix
+        :param image: ِnparray which represents an image
+        :param grayscale_image: ِnparray which represents a grayscale image
+        :param gradients: ِnparray which represents a gradients' matrix
         :param dim_diff: the desired difference in width / height
         :param is_forward: a boolean flag that indicates whether forward or basic implementation is used
         :return: resized_image scaled up width by dim_diff and seams image
@@ -58,9 +58,9 @@ def scale_down(image: NDArray, grayscale_image: NDArray, gradients: NDArray, dim
 
 def scale_up(image: NDArray, grayscale_image: NDArray, gradients: NDArray, dim_diff: int, is_forward : bool):
     """
-        :param image: ِnp.array which represents an image
-        :param grayscale_image: ِnp.array which represents a grayscale image
-        :param gradients: ِnp.array which represents a gradients matrix
+        :param image: ِnparray which represents an image
+        :param grayscale_image: ِnparray which represents a grayscale image
+        :param gradients: ِnparray which represents a gradients' matrix
         :param dim_diff: the desired difference in width / height
         :param is_forward: a boolean flag that indicates whether forward or basic implementation is used
         :return: resized_image scaled up width by dim_diff and seams image.

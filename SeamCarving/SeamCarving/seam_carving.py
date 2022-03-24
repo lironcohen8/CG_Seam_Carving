@@ -86,7 +86,7 @@ def calculate_seams(grayscale_image: NDArray, gradients: NDArray, dim_diff : int
             best_seam = find_best_seam_basic(cost_matrix, indices_matrix)
 
         seams_matrix[:,seam_number] = best_seam
-        remove_seam(grayscale_image, indices_matrix, best_seam)
+        remove_seam(grayscale_image, indices_matrix, gradients, best_seam)
 
     return indices_matrix, seams_matrix
 
@@ -122,12 +122,14 @@ def find_best_seam_basic(cost_matrix: NDArray, indices_matrix: NDArray):
         best_orig_seam[row_index] = indices_matrix[row_index,min_column_index]
     return best_orig_seam
 
-def remove_seam(grayscale_image: NDArray, indices_matrix: NDArray, seam: NDArray):
+def remove_seam(grayscale_image: NDArray, indices_matrix: NDArray, gradients: NDArray, seam: NDArray):
     for row_index in range(grayscale_image.shape[0]):
         grayscale_image[row_index,:] = np.concatenate(grayscale_image[row_index,:seam[row_index]], \
                                                       grayscale_image[row_index, seam[row_index]+1:])
         indices_matrix[row_index,:] = np.concatenate(indices_matrix[row_index,:seam[row_index]], \
                                                      indices_matrix[row_index, seam[row_index]+1:])
+        gradients[row_index, :] = np.concatenate(gradients[row_index, :seam[row_index]], \
+                                                      gradients[row_index, seam[row_index] + 1:])
 
 def create_original_without_seams(image: NDArray, indices_matrix: NDArray):
     # resized_image = np.zeros_like(original_image)

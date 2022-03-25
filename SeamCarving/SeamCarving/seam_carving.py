@@ -94,8 +94,8 @@ def calculate_cost_matrix_basic(grayscale_image: NDArray, E: NDArray):
     M[0,:] = E[0,:]
     # column_256 = np.broadcast_to([256.], [grayscale_image.shape[1], 1])
     for row in M[1:,:]:
-        shift_right_row = np.concatenate([256., M[row-1, 0:-1]], axis=1)
-        shift_left_row = np.concatenate([M[row-1, 1:], 256.], axis=1)
+        shift_right_row = np.concatenate(([256.], M[row-1, 0:-1]), axis=1)
+        shift_left_row = np.concatenate((M[row-1, 1:], [256.]), axis=1)
         M[row] = E[row] + np.fmin(M[row-1,:], shift_left_row, shift_right_row)
     return M
 
@@ -118,7 +118,7 @@ def find_best_seam_basic(cost_matrix: NDArray, indices_matrix: NDArray):
                                          cost_matrix[row_index, best_prev_index-1],
                                          cost_matrix[row_index, best_prev_index+1])
 
-        best_orig_seam[row_index] = indices_matrix[row_index,min_column_index]
+        best_orig_seam[row_index] = indices_matrix[row_index, min_column_index]
     return best_orig_seam
 
 def remove_seam(grayscale_image: NDArray, indices_matrix: NDArray, gradients: NDArray, seam: NDArray):
@@ -135,12 +135,11 @@ def create_original_without_seams(image: NDArray, indices_matrix: NDArray):
     return np.take(image, indices_matrix)
 
 def create_original_with_dup_seams(image: NDArray, seams_matrix: NDArray, dim_diff: int):
-    rows_range = np.range(image.shape[0])
-    for seam_number in range(dim_diff):
-        np.insert()
-        image[rows_range,seams_matrix[:,seam_number]]
-        # TODO continue
-    return
+    resized_image = np.empty(image.shape[0], image.shape[1]+dim_diff)
+    for row_idx in range(image.shape[0]):
+        duplicated_values = np.take(image[row_idx,:], seams_matrix[row_idx,:])
+        resized_image[row_idx,:] = np.insert(image[row_idx,:], seams_matrix[row_idx,:], duplicated_values)
+    return resized_image
 
 def calculate_cost_matrix_forward(grayscale_image: NDArray, E: NDArray):
     # TODO continue

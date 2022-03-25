@@ -56,7 +56,7 @@ def scale_down(image: NDArray, grayscale_image: NDArray, gradients: NDArray, dim
         :return: resized_image scaled up width by dim_diff and seams image
     """
     indices_matrix, seams_matrix = calculate_seams(grayscale_image, gradients, dim_diff, image.shape, is_forward)
-    resized_image = create_original_without_seams(image, indices_matrix)
+    resized_image = create_original_without_seams(image, seams_matrix)
     rows_range = np.arange(image.shape[0])
     for seam_number in range(dim_diff):
         image[rows_range, seams_matrix[:, seam_number]] = [255, 0, 0]
@@ -148,16 +148,19 @@ def remove_seam(grayscale_image: NDArray, indices_matrix: NDArray, gradients: ND
 
 def remove_seam_from_matrix(matrix: NDArray, seam: NDArray):
     for row_index in range(matrix.shape[0]):
-        matrix[row_index, :] = np.roll(matrix[row_index, :], shift=-1*seam[row_index])
+        matrix[row_index, :] = np.roll(matrix[row_index, :], shift=-1*seam[row_index], axis=0)
     matrix = np.delete(matrix, 0, 1)  # deleting first column
     for row_index in range(matrix.shape[0]):
-        matrix[row_index, :] = np.roll(matrix[row_index, :], shift=seam[row_index])
+        matrix[row_index, :] = np.roll(matrix[row_index, :], shift=seam[row_index], axis=0)
     return matrix
 
 
-def create_original_without_seams(image: NDArray, indices_matrix: NDArray):
+def create_original_without_seams(image: NDArray, seams_matrix: NDArray):
     # resized_image = np.zeros_like(original_image)
-    return np.take(image, indices_matrix, axis=0)
+    #return np.take(image, indices_matrix, axis=1)
+    for seam in seams_matrix:
+        image = remove_seam_from_matrix(image, seam)
+    return image
 
 
 def create_original_with_dup_seams(image: NDArray, seams_matrix: NDArray, dim_diff: int):

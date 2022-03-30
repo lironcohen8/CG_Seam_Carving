@@ -32,11 +32,10 @@ def resize(image: NDArray, out_height: int, out_width: int, forward_implementati
         resized_width_image, vertical_seams = scale_up(image, grayscale_original_image, gradients, abs(width_diff),
                                                        forward_implementation, True)
 
-    grayscale_resized_image = utils.to_grayscale(resized_width_image)
     resized_width_image = np.rot90(resized_width_image, k=1, axes=(0, 1))  # rotating CCW
-    grayscale_resized_image = np.rot90(grayscale_resized_image, k=1, axes=(0, 1))  # rotating CCW
+    grayscale_resized_image = utils.to_grayscale(resized_width_image)
     horizontal_seams = np.copy(resized_width_image)
-    gradients = np.rot90(gradients, k=1, axes=(0, 1))  # rotating CCW
+    gradients = utils.get_gradients(resized_width_image)
     resized_image = np.copy(resized_width_image)
     if height_diff > 0:  # need to scale down the height
         resized_image, horizontal_seams = scale_down(resized_width_image, grayscale_resized_image, gradients,

@@ -174,7 +174,7 @@ def remove_seam_from_matrix(matrix: NDArray, seam: NDArray):
 
 
 def create_original_without_seams(image: NDArray, indices_matrix: NDArray):
-    resized_image = np.empty((indices_matrix.shape[0], indices_matrix.shape[1], 3))
+    resized_image = np.zeros((indices_matrix.shape[0], indices_matrix.shape[1], 3))
     for row_index in range(image.shape[0]):
         resized_image[row_index, :] = np.take(image[row_index, :], indices_matrix[row_index, :], axis=0)
     return resized_image
@@ -182,7 +182,7 @@ def create_original_without_seams(image: NDArray, indices_matrix: NDArray):
 
 def create_original_with_dup_seams(image: NDArray, seams_matrix: NDArray, dim_diff: int):
     seams_t = seams_matrix.T
-    resized_image = np.empty((image.shape[0], image.shape[1] + dim_diff, 3))
+    resized_image = np.zeros((image.shape[0], image.shape[1] + dim_diff, 3))
     for row_index in range(image.shape[0]):
         values = np.take(image[row_index, :], seams_t[row_index, :], axis=0)
         resized_image[row_index, :] = np.insert(image[row_index, :],

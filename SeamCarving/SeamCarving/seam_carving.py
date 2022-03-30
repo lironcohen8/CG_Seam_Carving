@@ -23,8 +23,8 @@ def resize(image: NDArray, out_height: int, out_width: int, forward_implementati
     height_diff = original_height - out_height
     width_diff = original_width - out_width
     grayscale_original_image = utils.to_grayscale(image)
-    vertical_seams = image
-    resized_width_image = image
+    vertical_seams = np.copy(image)
+    resized_width_image = np.copy(image)
     if width_diff > 0:  # need to scale down the width
         resized_width_image, vertical_seams = scale_down(image, grayscale_original_image, gradients, width_diff,
                                                          forward_implementation, True)
@@ -35,9 +35,9 @@ def resize(image: NDArray, out_height: int, out_width: int, forward_implementati
     grayscale_resized_image = utils.to_grayscale(resized_width_image)
     resized_width_image = np.rot90(resized_width_image, k=1, axes=(0, 1))  # rotating CCW
     grayscale_resized_image = np.rot90(grayscale_resized_image, k=1, axes=(0, 1))  # rotating CCW
-    horizontal_seams = resized_width_image
+    horizontal_seams = np.copy(resized_width_image)
     gradients = np.rot90(gradients, k=1, axes=(0, 1))  # rotating CCW
-    resized_image = resized_width_image
+    resized_image = np.copy(resized_width_image)
     if height_diff > 0:  # need to scale down the height
         resized_image, horizontal_seams = scale_down(resized_width_image, grayscale_resized_image, gradients,
                                                      height_diff, forward_implementation, False)
@@ -106,11 +106,13 @@ def calculate_seams(grayscale_image: NDArray, gradients: NDArray, dim_diff: int,
     for seam_number in range(dim_diff):
         left_cost, vertical_cost, right_cost = compute_forward_costs(grayscale_image, is_forward)
         cost_matrix = calculate_cost_matrix(grayscale_image, gradients, left_cost, vertical_cost, right_cost)
-        best_seam = find_best_seam(cost_matrix, indices_matrix)
+        best_gray_seam, best_orig_seam = find_best_seam(cost_matrix, indices_matrix)
 
-        seams_matrix[seam_number, :] = best_seam
-        grayscale_image, indices_matrix, gradients = remove_seam(grayscale_image, indices_matrix, gradients, best_seam)
-
+        seams_matrix[seam_number, :] = best_orig_seam
+        grayscale_image, indices_matrix, gradients = remove_seam(grayscale_image,
+                                                                 indices_matrix,
+                                                                 gradients,
+                                                                 best_gray_seam)
     return indices_matrix, seams_matrix
 
 
@@ -126,12 +128,13 @@ def calculate_cost_matrix(grayscale_image: NDArray, E: NDArray, left_cost: NDArr
 
 
 def find_best_seam(cost_matrix: NDArray, indices_matrix: NDArray):
+    best_gray_seam = np.zeros((cost_matrix.shape[0],), dtype=int)
+    best_gray_seam[-1] = np.argmin(cost_matrix[-1, :])
     best_orig_seam = np.zeros((cost_matrix.shape[0],), dtype=int)
-    best_orig_seam[-1] = np.argmin(cost_matrix[-1, :])
 
     for i in range(2, cost_matrix.shape[0] + 1):
         row_index = -i
-        best_prev_index = best_orig_seam[row_index + 1]
+        best_prev_index = best_gray_seam[row_index + 1]
         is_right_edge = best_prev_index == cost_matrix.shape[1] - 1
         is_left_edge = best_prev_index == 0
 
@@ -151,10 +154,10 @@ def find_best_seam(cost_matrix: NDArray, indices_matrix: NDArray):
                           cost_matrix[row_index, best_prev_index + 1]]
             min_column_index = best_prev_index - 1 + candidates.index(min(candidates))
 
-        best_orig_seam[row_index] = min_column_index
+        best_gray_seam[row_index] = min_column_index
     for row_index in range(cost_matrix.shape[0]):
-        best_orig_seam[row_index] = indices_matrix[row_index, best_orig_seam[row_index]]
-    return best_orig_seam
+        best_orig_seam[row_index] = indices_matrix[row_index, best_gray_seam[row_index]]
+    return best_gray_seam, best_orig_seam
 
 
 def remove_seam(grayscale_image: NDArray, indices_matrix: NDArray, gradients: NDArray, seam: NDArray):

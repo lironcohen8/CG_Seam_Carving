@@ -103,9 +103,9 @@ def calculate_seams(grayscale_image: NDArray, gradients: NDArray, dim_diff: int,
     seams_matrix = np.zeros((dim_diff, grayscale_image.shape[0]), dtype=int)
 
     for seam_number in range(dim_diff):
-        left_cost, vertical_cost, right_cost = compute_forward_costs(grayscale_image, is_forward)
-        cost_matrix = calculate_cost_matrix(grayscale_image, gradients, left_cost, vertical_cost, right_cost)
-        best_gray_seam, best_orig_seam = find_best_seam(cost_matrix, indices_matrix)
+        Cl, Cv, Cr = compute_forward_costs(grayscale_image, is_forward)
+        cost_matrix = calculate_cost_matrix(grayscale_image, gradients, Cl, Cv, Cr)
+        best_gray_seam, best_orig_seam = find_best_seam(cost_matrix, gradients, indices_matrix, Cl, Cv)
 
         seams_matrix[seam_number, :] = best_orig_seam
         grayscale_image, indices_matrix, gradients = remove_seam(grayscale_image,
@@ -115,7 +115,11 @@ def calculate_seams(grayscale_image: NDArray, gradients: NDArray, dim_diff: int,
     return indices_matrix, seams_matrix
 
 
-def calculate_cost_matrix(grayscale_image: NDArray, E: NDArray, left_cost: NDArray, vertical_cost: NDArray, right_cost: NDArray):
+def calculate_cost_matrix(grayscale_image: NDArray,
+                          E: NDArray,
+                          left_cost: NDArray,
+                          vertical_cost: NDArray,
+                          right_cost: NDArray):
     M = np.zeros_like(grayscale_image)
     M[0, :] = E[0, :]
     for row_index in range(1, M.shape[0]):
@@ -126,35 +130,39 @@ def calculate_cost_matrix(grayscale_image: NDArray, E: NDArray, left_cost: NDArr
     return M
 
 
-def find_best_seam(cost_matrix: NDArray, indices_matrix: NDArray):
-    best_gray_seam = np.zeros((cost_matrix.shape[0],), dtype=int)
-    best_gray_seam[-1] = np.argmin(cost_matrix[-1, :])
-    best_orig_seam = np.zeros((cost_matrix.shape[0],), dtype=int)
+def find_best_seam(M: NDArray, E: NDArray, indices_matrix: NDArray, Cl: NDArray, Cv: NDArray):
+    best_gray_seam = np.zeros((M.shape[0],), dtype=int)
+    best_gray_seam[-1] = np.argmin(M[-1, :])
+    best_orig_seam = np.zeros((M.shape[0],), dtype=int)
 
-    for i in range(2, cost_matrix.shape[0] + 1):
-        row_index = -i
-        best_prev_index = best_gray_seam[row_index + 1]
-        is_right_edge = best_prev_index == cost_matrix.shape[1] - 1
+    for k in range(1, M.shape[0]):
+        i = -k
+        best_prev_index = best_gray_seam[i + 1]
+        j = best_prev_index
+        is_right_edge = best_prev_index == M.shape[1] - 1
         is_left_edge = best_prev_index == 0
-
         if is_left_edge and is_right_edge:
-            min_column_index = cost_matrix[row_index, best_prev_index]
+            min_column_index = j
         elif is_left_edge:
-            candidates = [cost_matrix[row_index, best_prev_index],
-                          cost_matrix[row_index, best_prev_index + 1]]
-            min_column_index = best_prev_index + candidates.index(min(candidates))
+            if M[i, j] == E[i, j] + M[i-1, j] + Cv[i, j]:
+                min_column_index = j
+            else:
+                min_column_index = j+1
         elif is_right_edge:
-            candidates = [cost_matrix[row_index, best_prev_index - 1],
-                          cost_matrix[row_index, best_prev_index]]
-            min_column_index = best_prev_index - 1 + candidates.index(min(candidates))
+            if M[i, j] == E[i, j] + M[i-1, j] + Cv[i, j]:
+                min_column_index = j
+            else:
+                min_column_index = j-1
         else:
-            candidates = [cost_matrix[row_index, best_prev_index - 1],
-                          cost_matrix[row_index, best_prev_index],
-                          cost_matrix[row_index, best_prev_index + 1]]
-            min_column_index = best_prev_index - 1 + candidates.index(min(candidates))
+            if M[i, j] == E[i, j] + M[i-1, j] + Cv[i, j]:
+                min_column_index = j
+            elif M[i, j] == E[i, j] + M[i-1, j-1] + Cl[i, j]:
+                min_column_index = j-1
+            else:
+                min_column_index = j+1
 
-        best_gray_seam[row_index] = min_column_index
-    for row_index in range(cost_matrix.shape[0]):
+        best_gray_seam[i-1] = min_column_index
+    for row_index in range(M.shape[0]):
         best_orig_seam[row_index] = indices_matrix[row_index, best_gray_seam[row_index]]
     return best_gray_seam, best_orig_seam
 

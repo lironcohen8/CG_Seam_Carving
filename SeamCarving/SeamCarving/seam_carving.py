@@ -130,8 +130,6 @@ def calculate_cost_matrix_basic(grayscale_image: NDArray, E: NDArray):
 
 
 def find_best_seam_basic(cost_matrix: NDArray, indices_matrix: NDArray):
-    print("cost: ", cost_matrix.shape)
-    print("indices: ", indices_matrix.shape)
     best_orig_seam = np.zeros((cost_matrix.shape[0],), dtype=int)
     best_orig_seam[-1] = np.argmin(cost_matrix[-1, :])
     for i in range(2, cost_matrix.shape[0] + 1):
@@ -143,26 +141,20 @@ def find_best_seam_basic(cost_matrix: NDArray, indices_matrix: NDArray):
         if is_left_edge and is_right_edge:  # one column
             min_column_index = cost_matrix[row_index, best_prev_index]
         elif is_left_edge:
-            print("LE row index: ", row_index, " best prev index: ", best_prev_index)
             candidates = [cost_matrix[row_index, best_prev_index],
                           cost_matrix[row_index, best_prev_index + 1]]
             min_column_index = best_prev_index + candidates.index(min(candidates))
         elif is_right_edge:
-            print("RE row index: ", row_index, " best prev index: ", best_prev_index)
             candidates = [cost_matrix[row_index, best_prev_index - 1],
                           cost_matrix[row_index, best_prev_index]]
             min_column_index = best_prev_index - 1 + candidates.index(min(candidates))
-            print("addition: ", candidates.index(min(candidates)))
-            print("min_column_index: ", min_column_index)
         else:
-            print("BOTH row index: ", row_index, " best prev index: ", best_prev_index)
             candidates = [cost_matrix[row_index, best_prev_index - 1],
                           cost_matrix[row_index, best_prev_index],
                           cost_matrix[row_index, best_prev_index + 1]]
             min_column_index = best_prev_index - 1 + candidates.index(min(candidates))
 
         best_orig_seam[row_index] = min_column_index
-    print("found seam!")
     for row_index in range(cost_matrix.shape[0]):
         best_orig_seam[row_index] = indices_matrix[row_index, best_orig_seam[row_index]]
     return best_orig_seam
@@ -186,15 +178,9 @@ def remove_seam_from_matrix(matrix: NDArray, seam: NDArray):
 
 def create_original_without_seams(image: NDArray, indices_matrix: NDArray):
     resized_image = np.empty((indices_matrix.shape[0], indices_matrix.shape[1], 3))
-    print("shape of image is: ", image.shape)
     for row_index in range(image.shape[0]):
-        print("in shape: ", image[row_index, :].shape)
-        print("in indices: ", indices_matrix[row_index, :].shape)
         resized_image[row_index, :] = np.take(image[row_index, :], indices_matrix[row_index, :], axis=0)
     return resized_image
-    # for seam in seams_matrix:
-    #   image = remove_seam_from_matrix(image, seam)
-    # return image
 
 
 def create_original_with_dup_seams(image: NDArray, seams_matrix: NDArray, dim_diff: int):
@@ -205,18 +191,8 @@ def create_original_with_dup_seams(image: NDArray, seams_matrix: NDArray, dim_di
         resized_image[row_index, :] = np.insert(image[row_index, :],
                                                 seams_t[row_index, :],
                                                 values, axis=0)
-
-
     return resized_image
-    # for seam in seams_matrix:
-    #   print("range is: ", image.shape[0])
-    #  for row_index in range(image.shape[0]):
-    #     print("row is: ", row_index)
-    #    image[row_index, :] = np.roll(image[row_index, :], shift=seam[row_index])
-    # image = np.insert(image, 0, image[0, :], 1)  # duplicating first column
-    # for row_index in range(image.shape[0]):
-    #   image[row_index, :] = np.roll(image[row_index, :], shift=-1 * seam[row_index])
-    # return image
+
 
 
 def calculate_cost_matrix_forward(grayscale_image: NDArray, E: NDArray):

@@ -120,10 +120,8 @@ def calculate_cost_matrix(grayscale_image: NDArray, E: NDArray, left_cost: NDArr
     for row_index in range(1, M.shape[0]):
         shift_right_row = np.concatenate((np.array([256.]), M[row_index - 1, 0:-1]))
         shift_left_row = np.concatenate((M[row_index - 1, 1:], np.array([256.])))
-        M[row_index] = E[row_index] + np.fmin(
-            M[row_index - 1, :] + vertical_cost[row_index, :],
-            shift_left_row + right_cost[row_index, :],
-            shift_right_row + left_cost[row_index, :])
+        temp_min = np.fmin(M[row_index - 1, :] + vertical_cost[row_index, :], shift_left_row + right_cost[row_index, :])
+        M[row_index] = E[row_index] + np.fmin(temp_min, shift_right_row + left_cost[row_index, :])
     return M
 
 

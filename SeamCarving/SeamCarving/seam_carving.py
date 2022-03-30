@@ -24,7 +24,6 @@ def resize(image: NDArray, out_height: int, out_width: int, forward_implementati
     width_diff = original_width - out_width
     grayscale_original_image = utils.to_grayscale(image)
     vertical_seams = image
-    horizontal_seams = image
     resized_width_image = image
     if width_diff > 0:  # need to scale down the width
         resized_width_image, vertical_seams = scale_down(image, grayscale_original_image, gradients, width_diff,
@@ -36,6 +35,7 @@ def resize(image: NDArray, out_height: int, out_width: int, forward_implementati
     grayscale_resized_image = utils.to_grayscale(resized_width_image)
     resized_width_image = np.rot90(resized_width_image, k=1, axes=(0, 1))  # rotating CCW
     grayscale_resized_image = np.rot90(grayscale_resized_image, k=1, axes=(0, 1))  # rotating CCW
+    horizontal_seams = resized_width_image
     gradients = np.rot90(gradients, k=1, axes=(0, 1))  # rotating CCW
     resized_image = resized_width_image
     if height_diff > 0:  # need to scale down the height
@@ -104,41 +104,40 @@ def calculate_seams(grayscale_image: NDArray, gradients: NDArray, dim_diff: int,
     seams_matrix = np.zeros((dim_diff, grayscale_image.shape[0]), dtype=int)
 
     for seam_number in range(dim_diff):
-        if is_forward:
-            cost_matrix = calculate_cost_matrix_forward(grayscale_image, gradients)
-            best_seam = find_best_seam_forward(cost_matrix, indices_matrix)
-        else:
-            cost_matrix = calculate_cost_matrix_basic(grayscale_image, gradients)
-            best_seam = find_best_seam_basic(cost_matrix, indices_matrix)
+        left_cost, vertical_cost, right_cost = compute_forward_costs(grayscale_image, is_forward)
+        cost_matrix = calculate_cost_matrix(grayscale_image, gradients, left_cost, vertical_cost, right_cost)
+        best_seam = find_best_seam(cost_matrix, indices_matrix)
 
-        # print(seams_matrix[:, seam_number])
         seams_matrix[seam_number, :] = best_seam
         grayscale_image, indices_matrix, gradients = remove_seam(grayscale_image, indices_matrix, gradients, best_seam)
 
     return indices_matrix, seams_matrix
 
 
-def calculate_cost_matrix_basic(grayscale_image: NDArray, E: NDArray):
+def calculate_cost_matrix(grayscale_image: NDArray, E: NDArray, left_cost: NDArray, vertical_cost: NDArray, right_cost: NDArray):
     M = np.zeros_like(grayscale_image)
     M[0, :] = E[0, :]
-    # column_256 = np.broadcast_to([256.], [grayscale_image.shape[1], 1])
     for row_index in range(1, M.shape[0]):
         shift_right_row = np.concatenate((np.array([256.]), M[row_index - 1, 0:-1]))
         shift_left_row = np.concatenate((M[row_index - 1, 1:], np.array([256.])))
-        M[row_index] = E[row_index] + np.fmin(M[row_index - 1, :], shift_left_row, shift_right_row)
+        M[row_index] = E[row_index] + np.fmin(
+            M[row_index - 1, :] + vertical_cost[row_index, :],
+            shift_left_row + right_cost[row_index, :],
+            shift_right_row + left_cost[row_index, :])
     return M
 
 
-def find_best_seam_basic(cost_matrix: NDArray, indices_matrix: NDArray):
+def find_best_seam(cost_matrix: NDArray, indices_matrix: NDArray):
     best_orig_seam = np.zeros((cost_matrix.shape[0],), dtype=int)
     best_orig_seam[-1] = np.argmin(cost_matrix[-1, :])
+
     for i in range(2, cost_matrix.shape[0] + 1):
         row_index = -i
         best_prev_index = best_orig_seam[row_index + 1]
         is_right_edge = best_prev_index == cost_matrix.shape[1] - 1
         is_left_edge = best_prev_index == 0
 
-        if is_left_edge and is_right_edge:  # one column
+        if is_left_edge and is_right_edge:
             min_column_index = cost_matrix[row_index, best_prev_index]
         elif is_left_edge:
             candidates = [cost_matrix[row_index, best_prev_index],
@@ -194,12 +193,23 @@ def create_original_with_dup_seams(image: NDArray, seams_matrix: NDArray, dim_di
     return resized_image
 
 
+def compute_forward_costs(grayscale_image: NDArray, is_forward: bool):
+    left_cost = np.zeros_like(grayscale_image)
+    vertical_cost = np.zeros_like(grayscale_image)
+    right_cost = np.zeros_like(grayscale_image)
+    if not is_forward:
+        return left_cost, vertical_cost, right_cost
 
-def calculate_cost_matrix_forward(grayscale_image: NDArray, E: NDArray):
-    # TODO continue
-    pass
+    zero_column = np.broadcast_to([0.], [grayscale_image.shape[0], 1])
+    zero_row = np.broadcast_to([0.], [1, grayscale_image.shape[1]])
+    left_neighbors = np.concatenate([zero_column, grayscale_image[:, 0:-1]], axis=1)
+    right_neighbors = np.concatenate([grayscale_image[:, 1:], zero_column], axis=1)
+    upper_neighbors = np.concatenate([zero_row, grayscale_image[0:-1, :]], axis=0)
+    common_cost = np.abs(left_neighbors - right_neighbors)
+    left_cost = common_cost + np.abs(upper_neighbors - left_neighbors)
+    vertical_cost = common_cost
+    right_cost = common_cost + np.abs(upper_neighbors - right_neighbors)
+
+    return left_cost, vertical_cost, right_cost
 
 
-def find_best_seam_forward(cost_matrix: NDArray, indices_matrix: NDArray):
-    # TODO continue
-    pass

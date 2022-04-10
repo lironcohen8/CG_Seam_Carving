@@ -237,15 +237,22 @@ def compute_forward_costs(grayscale_image: NDArray, is_forward: bool):
         # Return zero costs matrices:
         return left_cost, vertical_cost, right_cost
 
-    zero_column = np.broadcast_to([255.], [grayscale_image.shape[0], 1])
-    zero_row = np.broadcast_to([255.], [1, grayscale_image.shape[1]])
-    left_neighbors = np.concatenate([zero_column, grayscale_image[:, 0:-1]], axis=1)
-    right_neighbors = np.concatenate([grayscale_image[:, 1:], zero_column], axis=1)
-    upper_neighbors = np.concatenate([zero_row, grayscale_image[0:-1, :]], axis=0)
-    common_cost = np.abs(right_neighbors - left_neighbors)
-    left_cost = common_cost + np.abs(upper_neighbors - left_neighbors)
+    padding_column = np.broadcast_to([255.], [grayscale_image.shape[0], 1])
+    padding_row = np.broadcast_to([255.], [1, grayscale_image.shape[1]])
+
+    left_neighbors = np.concatenate([padding_column, grayscale_image[:, 0:-1]], axis=1)
+    right_neighbors = np.concatenate([grayscale_image[:, 1:], padding_column], axis=1)
+    upper_neighbors = np.concatenate([padding_row, grayscale_image[0:-1, :]], axis=0)
+
+    common_cost = np.concatenate([padding_column, np.abs(right_neighbors - left_neighbors)[:, 1:-1], padding_column], axis=1)
+    left_addition = np.concatenate([padding_row, np.abs(upper_neighbors - left_neighbors)[1:, :]], axis=0)
+    left_addition = np.concatenate([padding_column, left_addition[:, 1:]], axis=1)
+    right_addition = np.concatenate([padding_row, np.abs(upper_neighbors - right_neighbors)[1:, :]], axis=0)
+    right_addition = np.concatenate([right_addition[:, :-1], padding_column], axis=1)
+
+    left_cost = common_cost + left_addition
     vertical_cost = common_cost
-    right_cost = common_cost + np.abs(upper_neighbors - right_neighbors)
+    right_cost = common_cost + right_addition
 
     return left_cost, vertical_cost, right_cost
 

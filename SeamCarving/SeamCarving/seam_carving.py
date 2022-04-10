@@ -228,18 +228,21 @@ def create_original_with_dup_seams(image: NDArray, seams_matrix: NDArray, dim_di
 
 
 def compute_forward_costs(grayscale_image: NDArray, is_forward: bool):
+    # Initialize the costs matrices:
     left_cost = np.zeros_like(grayscale_image)
     vertical_cost = np.zeros_like(grayscale_image)
     right_cost = np.zeros_like(grayscale_image)
+
     if not is_forward:
+        # Return zero costs matrices:
         return left_cost, vertical_cost, right_cost
 
-    zero_column = np.broadcast_to([0.], [grayscale_image.shape[0], 1])
-    zero_row = np.broadcast_to([0.], [1, grayscale_image.shape[1]])
+    zero_column = np.broadcast_to([255.], [grayscale_image.shape[0], 1])
+    zero_row = np.broadcast_to([255.], [1, grayscale_image.shape[1]])
     left_neighbors = np.concatenate([zero_column, grayscale_image[:, 0:-1]], axis=1)
     right_neighbors = np.concatenate([grayscale_image[:, 1:], zero_column], axis=1)
     upper_neighbors = np.concatenate([zero_row, grayscale_image[0:-1, :]], axis=0)
-    common_cost = np.abs(left_neighbors - right_neighbors)
+    common_cost = np.abs(right_neighbors - left_neighbors)
     left_cost = common_cost + np.abs(upper_neighbors - left_neighbors)
     vertical_cost = common_cost
     right_cost = common_cost + np.abs(upper_neighbors - right_neighbors)

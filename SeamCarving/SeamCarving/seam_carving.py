@@ -19,8 +19,8 @@ def resize(image: NDArray, output_height: int, output_width: int, forward_implem
             (where the chosen seams are colored red and black for vertical and horizontal seams, respectively).
     """
     # Compute gradients matrix & gray-scale image:
-    gradients = utils.get_gradients(image)
     grayscale_image = utils.to_grayscale(image)
+    gradients = utils.get_gradients(grayscale_image)
 
     # Determine the dimensions scale extent:
     image_height = image.shape[0]
@@ -196,7 +196,8 @@ def find_best_seam(M: NDArray, E: NDArray, indices_matrix: NDArray, Cl: NDArray,
 def remove_seam(grayscale_image: NDArray, indices_matrix: NDArray, gradients: NDArray, seam: NDArray):
     grayscale_image = remove_seam_from_matrix(grayscale_image, seam)
     indices_matrix = remove_seam_from_matrix(indices_matrix, seam)
-    gradients = remove_seam_from_matrix(gradients, seam)
+    # gradients = remove_seam_from_matrix(gradients, seam)
+    gradients = utils.get_gradients(grayscale_image)
     return grayscale_image, indices_matrix, gradients
 
 
